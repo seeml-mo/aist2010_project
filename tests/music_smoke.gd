@@ -11,7 +11,8 @@ func _initialize() -> void:
 	call_deferred("run")
 
 func run() -> void:
-	var game := preload("res://scripts/music_game.gd").new()
+	preload("res://tests/input_fixture.gd").configure()
+	var game := preload("res://scenes/game.tscn").instantiate()
 	game.test_mode = true
 	game.autoplay = true
 	root.add_child(game)
@@ -38,11 +39,13 @@ func run() -> void:
 	check(game.jump_hits == game.music.jumps.size(), "All scheduled jumps accept alternating F and Space input")
 	check(game.attack_hits == game.music.attacks.size(), "All onset targets accept alternating J and K input")
 	check(game.misses == 0, "No targets missed in scheduled play")
+	check(game.enemy_spawner.spawned_count == game.music.attacks.size(), "EnemySpawner instantiated every JSON target")
+	check(game.enemy_spawner.results.size() == game.music.attacks.size(), "Every Enemy scene resolved through signals")
 	check(absf(game.player.position.x-(game.world.spawn.x+game.song_time*game.music.speed)) < 3, "Horizontal distance follows song clock")
 	print("MUSIC_TEST completed=", game.finished, " failed=", game.failed, " jumps=", game.jump_hits, " hits=", game.attack_hits, " t=", game.song_time)
 	game.queue_free()
 	await process_frame
-	var idle_game := preload("res://scripts/music_game.gd").new()
+	var idle_game := preload("res://scenes/game.tscn").instantiate()
 	idle_game.test_mode = true
 	root.add_child(idle_game)
 	for i in range(600):

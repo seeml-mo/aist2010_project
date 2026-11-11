@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/music_game.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/json_map.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/enemy_spawner.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="5"]
+[ext_resource type="AudioStream" path="res://assets/voxel_30s.ogg" id="6"]
+
+[node name="Game" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="World" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="Player" parent="." instance=ExtResource("3")]
+z_index = 10
+position = Vector2(224, 362)
+automatic = true
+music_controlled = true
+
+[node name="EnemySpawner" parent="." instance=ExtResource("4")]
+z_index = 5
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(480, 270)
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6")
+volume_db = -4.0
+
+[node name="HUD" parent="." instance=ExtResource("5")]
+
+[connection signal="attack_pressed" from="Player" to="." method="_attack"]
+[connection signal="jump_pressed" from="Player" to="." method="_jump"]
+[connection signal="enemy_defeated" from="EnemySpawner" to="." method="_on_enemy_defeated"]
+[connection signal="enemy_missed" from="EnemySpawner" to="." method="_on_enemy_missed"]

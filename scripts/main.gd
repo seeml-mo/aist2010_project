@@ -11,7 +11,7 @@ func _ready() -> void:
 		push_error(world.last_error)
 		get_tree().quit(1)
 		return
-	var player := preload("res://scripts/player.gd").new()
+	var player := preload("res://scenes/player.tscn").instantiate()
 	player.spawn = world.spawn
 	player.position = world.spawn
 	add_child(player)

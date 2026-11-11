@@ -6,6 +6,8 @@ Godot 4.5+。30 秒音乐自动横版跑酷，角色和地形风格对齐之前�
 
 在此目录运行 `./run.ps1`，或使用 Godot 导入 `project.godot` 后按 **F5**（运行整个项目）。
 
+**先手动配置 Input Map**：Project → Project Settings → Input Map，添加 `jump`（F/Space）、`attack`（J/K）、`restart`（R），建议选择 Physical Key。正式游戏不再用脚本创建/绑定 action；若尚未配置，自动前进和音乐仍可运行，但按键没有作用。已有手动设置不会被脚本覆盖。
+
 默认运行 `maps/music_demo.json`，播放与 integrated video 相同的 Voxel Revolution 00:28–00:58 片段。横向位置由音乐时钟决定，角色固定在屏幕左侧，摄像机自动跟随。
 
 - **F / Space：跳跃；J / K：攻击；R：从音乐开头重新开始。** 两种核心动作，每种各有两个等效键；无需控制左右移动。
@@ -30,7 +32,32 @@ Godot 4.5+。30 秒音乐自动横版跑酷，角色和地形风格对齐之前�
 
 生成脚本需要 Python 的 numpy、scipy、Pillow，以及 FFmpeg。默认复用上级工作区现有音乐和 `tools/ffmpeg.exe`；也支持 `--audio` 和 `--ffmpeg` 指定路径。已有生成结果随仓库保存，**正常运行游戏不需要 Python 或 FFmpeg**。
 
-QA 用的 `--autoplay` 会注入交替的 F/Space 和 J/K 输入；普通 F5 启动不启用它。`tests/music_smoke.gd` 检查全部缺口实际可通过、两组按键有效、过早攻击不能得分，以及不按键确实会掉落。
+QA 用的 `--autoplay` 会注入交替的 F/Space 和 J/K 输入，要求已有相应的 Input Map；普通 F5 启动不启用它。`tests/music_smoke.gd` 检查全部缺口实际可通过、两组按键有效、过早攻击不能得分，以及不按键确实会掉落。测试专用 `tests/input_fixture.gd` 仅在测试进程注册临时按键，不保存到 project.godot，也不被游戏场景引用。
+
+## Scene 组织与编辑入口
+
+参考 tutorial/4/platformer-game 的组织方式：节点与可编辑属性保存在 scene，脚本负责行为，通过 `@onready` 获取子节点，通过 signal 通信。
+
+```text
+main.tscn → scenes/game.tscn
+Game
+├── World                 # JSON → TileMapLayer，动态地形仍需代码生成
+├── Player                # scenes/player.tscn
+│   ├── Visual            # 独立视觉脚本，可替换为 Sprite/AnimatedSprite
+│   ├── CollisionShape2D  # 编辑器调整，不再由代码创建或设置尺寸
+│   └── AttackOrigin
+├── EnemySpawner          # scenes/enemy_spawner.tscn
+│   └── Enemies           # 运行时从 scenes/enemy.tscn 实例化
+├── Camera2D
+├── Music
+└── HUD                   # scenes/hud.tscn，可直接编辑 Label/面板
+```
+
+- **Player**：打开 `scenes/player.tscn`，选择 CollisionShape2D 调整 Shape/Position，选择根节点调整碰撞 Layer/Mask。保留原有 16×42 RectangleShape2D 作占位；脚本不覆盖你的设置。Jump Speed/Gravity 为 Inspector 导出参数。
+- **Enemy**：打开 `scenes/enemy.tscn`，可调整 Polygon2D 外观、提示和 Area2D 碰撞区域；当前仍采用音乐时间窗口和垂直距离判断攻击，Area2D 接触本身不会造成死亡。
+- **EnemySpawner**：在 Inspector 选择 Enemy Scene，修改 Lookahead Seconds/Cleanup Seconds；根据 `music.attacks` 生成真正的 Enemy 实例，命中/漏击通过 signal 回传 Game，清理已通过的敌人。
+- **Game**：打开 `scenes/game.tscn` 查看 Player、EnemySpawner、HUD 的实例与信号连接；Music 和 Camera 可直接在场景中配置。音乐流可被 JSON 的 `music.stream` 指定。
+- **测试**：`./run.ps1 -Test`；需要实际画面时可运行 Godot 的 `--script res://tests/preview_scene.gd`，该测试预览会注入临时按键并在 6.5 秒保存截图。
 
 旧的纯地图流程保持可用：`./run.ps1 -Map res://maps/demo.json`（台阶/悬浮平台，A/D 左右移动），或 `./run.ps1 -Map res://maps/platform.kenney.json`（公开地图适配）。
 

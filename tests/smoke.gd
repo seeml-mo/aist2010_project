@@ -31,7 +31,7 @@ func run() -> void:
 	invalid.tilesets[0].image = "../assets/kenney_tiles.png"
 	check(not world.load_map("res://test-output/invalid.json"), "Truncated JSON tile array rejected")
 	check(world.cell_count == 443 and world.get_child_count() == 1, "Failed load preserves previous map")
-	var player := preload("res://scripts/player.gd").new()
+	var player := preload("res://scenes/player.tscn").instantiate()
 	player.automatic = true
 	# Keep the wider avatar clear of the adjacent one-tile step at x=64.
 	player.position = Vector2(40, world.spawn.y)
@@ -40,7 +40,7 @@ func run() -> void:
 		await physics_frame
 	check(player.is_on_floor(), "Character lands on generated collision")
 	check(absf(player.position.y - 491.0) < 1.0, "Floor height matches JSON row 32 and 42px player collider")
-	var ground_y := player.position.y
+	var ground_y: float = player.position.y
 	player.velocity.y = -330
 	for i in range(15):
 		await physics_frame
