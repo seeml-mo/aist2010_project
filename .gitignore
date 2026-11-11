@@ -1,4 +1,6 @@
 .godot/
-test-output/
+.idea/
+.vscode/
 __pycache__/
+*.pyc
 *.tmp

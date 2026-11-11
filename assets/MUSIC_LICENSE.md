@@ -7,6 +7,5 @@ Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN2000025
 
 Changes: original 00:28–00:58 excerpt, short start/end fades, encoded as Ogg Vorbis.
 
-runner_tiles.png and the avatar drawn in player.gd are authored for this project,
-matching the earlier offline demonstration. Kenney textures remain in the
-JSON-only legacy fixtures (see KENNEY_LICENSE.txt).
+runner_tiles.png and the PNG avatar frames in assets/player/ are authored for this project,
+matching the earlier offline demonstration.

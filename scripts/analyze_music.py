@@ -7,7 +7,10 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT.parent / '.deps'))
+SOURCE_ROOT = ROOT.parent
+if not (SOURCE_ROOT / 'assets/Voxel Revolution.mp3').exists() and (SOURCE_ROOT / 'demo/assets/Voxel Revolution.mp3').exists():
+    SOURCE_ROOT = SOURCE_ROOT / 'demo'
+sys.path.insert(0, str(SOURCE_ROOT / '.deps'))
 from scipy import signal, ndimage
 
 
@@ -71,7 +74,7 @@ def build(source, ffmpeg, start=28.0, duration=30.0):
             data[y*width+x] = 1 if y == floor_row else 2
     m = {'orientation': 'orthogonal', 'infinite': False, 'width': width, 'height': height,
          'tilewidth': 16, 'tileheight': 16,
-         'tilesets': [{'firstgid': 1, 'image': '../assets/runner_tiles.png', 'tilewidth': 16,
+         'tilesets': [{'firstgid': 1, 'image': '../runner_tiles.png', 'tilewidth': 16,
                        'tileheight': 16, 'columns': 2, 'tilecount': 2}],
          'layers': [{'type': 'tilelayer', 'name': 'Music terrain', 'width': width, 'height': height,
                      'properties': [{'name': 'solid', 'value': True}], 'data': data},
@@ -85,7 +88,7 @@ def build(source, ffmpeg, start=28.0, duration=30.0):
                              'autocorrelation tempo (105-143 BPM prior), whole-excerpt tempo/phase refinement, local beat refinement. '
                              'Attacks select measured onsets within 100ms of eligible beats. '
                              'Sparse gameplay selection; not every onset becomes an obstacle.'}}
-    (ROOT/'maps/music_demo.json').write_text(json.dumps(m, indent=2)+'\n', encoding='utf-8')
+    (ROOT/'assets/maps/music_demo.json').write_text(json.dumps(m, indent=2)+'\n', encoding='utf-8')
     subprocess.run([str(ffmpeg), '-y', '-v', 'error', '-ss', str(start), '-i', str(source),
                     '-t', str(duration), '-af', 'afade=t=in:d=0.04,afade=t=out:st=29.7:d=0.3',
                     '-c:a', 'libvorbis', '-q:a', '5', str(ROOT/'assets/voxel_30s.ogg')], check=True)
@@ -100,7 +103,7 @@ def build(source, ffmpeg, start=28.0, duration=30.0):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--audio', type=Path, default=ROOT.parent/'assets/Voxel Revolution.mp3')
-    parser.add_argument('--ffmpeg', type=Path, default=ROOT.parent/'tools/ffmpeg.exe')
+    parser.add_argument('--audio', type=Path, default=SOURCE_ROOT/'assets/Voxel Revolution.mp3')
+    parser.add_argument('--ffmpeg', type=Path, default=SOURCE_ROOT/'tools/ffmpeg.exe')
     args = parser.parse_args()
     build(args.audio, args.ffmpeg)

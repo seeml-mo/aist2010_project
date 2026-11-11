@@ -19,41 +19,21 @@ var feedback_until := 0.0
 var song_time := 0.0
 var finished := false
 var failed := false
-var test_mode := false
-var autoplay := false
 var jump_hits := 0
 var attack_hits := 0
 var misses := 0
-var screenshot_path := ""
-var screenshot_at := 5.0
-var screenshot_pending := false
 var jump_attempts: Dictionary = {}
-var bot_jumps: Dictionary = {}
-var bot_attacks: Dictionary = {}
 var beat_pulse := 0.0
 
 func _ready() -> void:
-	var path := "res://maps/music_demo.json"
+	var path := "res://assets/maps/music_demo.json"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--map="):
 			path = arg.trim_prefix("--map=")
-		if arg == "--test-clock":
-			test_mode = true
-		if arg == "--autoplay":
-			autoplay = true
-		if arg.begins_with("--screenshot="):
-			screenshot_path = arg.trim_prefix("--screenshot=")
-		if arg.begins_with("--screenshot-at="):
-			screenshot_at = float(arg.trim_prefix("--screenshot-at="))
 	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if not data is Dictionary or not data.has("music"):
-		# Keep the original JSON-only fixtures available via --map.
-		add_child(preload("res://scripts/main.gd").new())
-		player.hide()
-		player.set_physics_process(false)
-		player.set_process_unhandled_input(false)
-		$HUD.hide()
-		set_physics_process(false)
+		push_error("Map JSON must contain a music object: " + path)
+		get_tree().quit(1)
 		return
 	music = data.music
 	if not world.load_map(path):
@@ -70,32 +50,27 @@ func _ready() -> void:
 	enemy_spawner.configure(music.attacks, world.spawn.x, music.speed, music.floor_y)
 	# Start only after at least one physics frame lets the character settle.
 	await get_tree().physics_frame
-	if not test_mode:
-		audio.play()
+	audio.play()
 	print("MUSIC_READY beats=", music.beats.size(), " jumps=", music.jumps.size(), " attacks=", music.attacks.size())
 
 func _unhandled_input(event: InputEvent) -> void:
 	if InputMap.has_action("restart") and event.is_action_pressed("restart") and not event.is_echo():
 		get_tree().reload_current_scene()
 
-func _physics_process(delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	if player == null:
 		return
 	if not finished and not failed:
-		if test_mode:
-			song_time += delta
-		elif audio.playing:
+		if audio.playing:
 			var audio_clock := audio.get_playback_position()+AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency()
 			song_time = maxf(song_time, maxf(0, audio_clock))
 		elif song_time > float(music.duration)-.2:
 			song_time = float(music.duration)
 		player.target_x = world.spawn.x + song_time*float(music.speed)
-		if autoplay:
-			_autoplay()
 		for i in range(music.jumps.size()):
 			if song_time > float(music.jumps[i].time)+.25 and not jump_attempts.has(i):
 				jump_attempts[i] = false
-		enemy_spawner.update_time(song_time)
+		enemy_spawner.update_time(song_time, player.global_position)
 		if player.position.y > float(music.floor_y)+95:
 			failed = true
 			player.active = false
@@ -110,29 +85,6 @@ func _physics_process(delta: float) -> void:
 		beat_pulse = maxf(beat_pulse, maxf(0, 1-absf(song_time-float(beat))/.13))
 	_update_hud()
 	queue_redraw()
-	if not screenshot_path.is_empty() and song_time >= screenshot_at and not screenshot_pending:
-		screenshot_pending = true
-		_capture.call_deferred()
-
-func _autoplay() -> void:
-	# Explicit QA/demo option only; ordinary play never supplies these inputs.
-	for i in range(music.jumps.size()):
-		if song_time >= float(music.jumps[i].time) and not bot_jumps.has(i):
-			bot_jumps[i] = true
-			_inject_key(KEY_F if i % 2 == 0 else KEY_SPACE)
-	for i in range(music.attacks.size()):
-		if song_time >= float(music.attacks[i].time) and not bot_attacks.has(i):
-			bot_attacks[i] = true
-			_inject_key(KEY_J if i % 2 == 0 else KEY_K)
-
-func _inject_key(code: Key) -> void:
-	var event := InputEventKey.new()
-	event.physical_keycode = code
-	event.pressed = true
-	Input.parse_input_event(event)
-	var release := InputEventKey.new()
-	release.physical_keycode = code
-	Input.parse_input_event(release)
 
 func _jump() -> void:
 	var best := -1
@@ -148,12 +100,12 @@ func _jump() -> void:
 		_feedback("ON BEAT" if distance < .08 else "JUMP", Color("6ce4c0"))
 
 func _attack() -> void:
-	if not enemy_spawner.try_attack(song_time, player.position):
+	if not enemy_spawner.try_attack(song_time, player.global_position, player.get_collision_bounds(), player.get_attack_tip()):
 		_feedback("NO TARGET IN REACH", Color("8d9db3"))
 
-func _on_enemy_defeated(_event_index: int, timing_error: float) -> void:
+func _on_enemy_defeated(_event_index: int, _timing_error: float) -> void:
 	attack_hits += 1
-	_feedback("PERFECT HIT" if timing_error < .075 else "HIT", Color("fff0ae"))
+	_feedback("HIT", Color("fff0ae"))
 
 func _on_enemy_missed(_event_index: int) -> void:
 	misses += 1
@@ -223,8 +175,6 @@ func _draw() -> void:
 	draw_line(Vector2(player.position.x, 124), Vector2(player.position.x, 446), Color("314e60"), 1)
 	draw_circle(Vector2(player.position.x, floor_y+48), 6+beat_pulse*4, Color("6ce4c0"))
 
-func _capture() -> void:
-	await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png(screenshot_path)
-	print("CAPTURE ", screenshot_path)
-	get_tree().quit()
+func _exit_tree() -> void:
+	if is_instance_valid(audio):
+		audio.stop()

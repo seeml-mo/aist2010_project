@@ -29,9 +29,9 @@ func configure(attack_events: Array, start_x: float, run_speed: float, ground_y:
 	origin_x = start_x
 	speed = run_speed
 	floor_y = ground_y
-	update_time(0)
+	update_time(0, Vector2(start_x, ground_y-25))
 
-func update_time(song_time: float) -> void:
+func update_time(song_time: float, player_position: Vector2) -> void:
 	while next_event < events.size() and float(events[next_event].time) <= song_time+lookahead_seconds:
 		var enemy = enemy_scene.instantiate()
 		enemy.event_index = next_event
@@ -43,14 +43,14 @@ func update_time(song_time: float) -> void:
 		next_event += 1
 		spawned_count += 1
 	for enemy in enemies.get_children():
-		enemy.update_time(song_time)
-		if song_time > enemy.hit_time+cleanup_seconds:
+		enemy.update_time(song_time, player_position)
+		if enemy.resolved and song_time > enemy.hit_time+cleanup_seconds:
 			enemies.remove_child(enemy)
 			enemy.queue_free()
 
-func try_attack(song_time: float, player_position: Vector2) -> bool:
+func try_attack(song_time: float, player_position: Vector2, player_bounds := Rect2(), attack_tip := Vector2.INF) -> bool:
 	for enemy in enemies.get_children():
-		if enemy.try_hit(song_time, player_position):
+		if enemy.try_hit(song_time, player_position, player_bounds, attack_tip):
 			return true
 	return false
 

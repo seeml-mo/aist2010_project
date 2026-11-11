@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8rj7vmq7sy26"
-path="res://.godot/imported/kenney_tiles.png-df1256ec7c434498aed1af9c5b650d02.ctex"
+uid="uid://boerglf0mahy6"
+path="res://.godot/imported/attack.png-092adecfc449630ac5f750140394eb53.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/kenney_tiles.png"
-dest_files=["res://.godot/imported/kenney_tiles.png-df1256ec7c434498aed1af9c5b650d02.ctex"]
+source_file="res://assets/player/attack/attack.png"
+dest_files=["res://.godot/imported/attack.png-092adecfc449630ac5f750140394eb53.ctex"]
 
 [params]
 
