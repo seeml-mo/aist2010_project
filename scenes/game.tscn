@@ -1,38 +1,423 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/music_game.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/json_map.gd" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/enemy_spawner.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="5"]
-[ext_resource type="AudioStream" path="res://assets/voxel_30s.ogg" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="3"]
 
+[ext_resource type="Texture2D" path="res://assets/shape/jump_arrow.svg" id="jump_arrow"]
+[ext_resource type="Texture2D" path="res://assets/shape/ground_edge.svg" id="ground_edge"]
+[ext_resource type="Texture2D" path="res://assets/shape/ground_fill.svg" id="soil"]
+[ext_resource type="Texture2D" path="res://assets/shape/ground_surface.svg" id="grass"]
+[ext_resource type="Texture2D" path="res://assets/shape/tile_background_grass.png" id="bush"]
+[ext_resource type="Texture2D" path="res://assets/shape/tile_background_tree_large.png" id="tree"]
+[ext_resource type="Texture2D" path="res://assets/shape/tile_cloud.png" id="cloud"]
+[ext_resource type="Texture2D" path="res://assets/shape/background_mountain.svg" id="mountain"]
+[ext_resource type="Texture2D" path="res://assets/shape/facial_part_mouth_angry.png" id="mouth"]
+[ext_resource type="Texture2D" path="res://assets/shape/facial_part_eye_open.png" id="eye"]
+[ext_resource type="Texture2D" path="res://assets/shape/blue_body_circle.png" id="blue"]
+[ext_resource type="Texture2D" path="res://assets/shape/red_body_circle.png" id="red"]
 [node name="Game" type="Node2D"]
-texture_filter = 1
 script = ExtResource("1")
-
-[node name="World" type="Node2D" parent="."]
-script = ExtResource("2")
-
-[node name="Player" parent="." instance=ExtResource("3")]
-z_index = 10
-position = Vector2(224, 362)
-automatic = true
-music_controlled = true
-
-[node name="EnemySpawner" parent="." instance=ExtResource("4")]
-z_index = 5
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(480, 270)
+ground_surface = ExtResource("grass")
+ground_fill = ExtResource("soil")
+ground_edge = ExtResource("ground_edge")
 
 [node name="Music" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("6")
 volume_db = -4.0
 
-[node name="HUD" parent="." instance=ExtResource("5")]
+[node name="Performer" parent="." instance=ExtResource("2")]
+position = Vector2(340, 402)
+z_index = 1
 
-[connection signal="attack_pressed" from="Player" to="." method="_attack"]
-[connection signal="jump_pressed" from="Player" to="." method="_jump"]
-[connection signal="enemy_defeated" from="EnemySpawner" to="." method="_on_enemy_defeated"]
-[connection signal="enemy_missed" from="EnemySpawner" to="." method="_on_enemy_missed"]
+[node name="HUD" parent="." instance=ExtResource("3")]
+
+[node name="StraightTarget" type="Node2D" parent="Performer"]
+position = Vector2(53, -30)
+
+[node name="Ring" type="Line2D" parent="Performer/StraightTarget"]
+points = PackedVector2Array(20.900, 0.000, 20.721, 2.728, 20.188, 5.409, 19.309, 7.998, 18.100, 10.450, 16.581, 12.723, 14.779, 14.779, 12.723, 16.581, 10.450, 18.100, 7.998, 19.309, 5.409, 20.188, 2.728, 20.721, 0.000, 20.900, -2.728, 20.721, -5.409, 20.188, -7.998, 19.309, -10.450, 18.100, -12.723, 16.581, -14.779, 14.779, -16.581, 12.723, -18.100, 10.450, -19.309, 7.998, -20.188, 5.409, -20.721, 2.728, -20.900, 0.000, -20.721, -2.728, -20.188, -5.409, -19.309, -7.998, -18.100, -10.450, -16.581, -12.723, -14.779, -14.779, -12.723, -16.581, -10.450, -18.100, -7.998, -19.309, -5.409, -20.188, -2.728, -20.721, -0.000, -20.900, 2.728, -20.721, 5.409, -20.188, 7.998, -19.309, 10.450, -18.100, 12.723, -16.581, 14.779, -14.779, 16.581, -12.723, 18.100, -10.450, 19.309, -7.998, 20.188, -5.409, 20.721, -2.728)
+width = 2.5
+default_color = Color(0.875, 0.286, 0.243, 1)
+closed = true
+antialiased = true
+
+[node name="UppercutTarget" type="Node2D" parent="Performer"]
+position = Vector2(6, -88)
+
+[node name="Ring" type="Line2D" parent="Performer/UppercutTarget"]
+points = PackedVector2Array(20.900, 0.000, 20.721, 2.728, 20.188, 5.409, 19.309, 7.998, 18.100, 10.450, 16.581, 12.723, 14.779, 14.779, 12.723, 16.581, 10.450, 18.100, 7.998, 19.309, 5.409, 20.188, 2.728, 20.721, 0.000, 20.900, -2.728, 20.721, -5.409, 20.188, -7.998, 19.309, -10.450, 18.100, -12.723, 16.581, -14.779, 14.779, -16.581, 12.723, -18.100, 10.450, -19.309, 7.998, -20.188, 5.409, -20.721, 2.728, -20.900, 0.000, -20.721, -2.728, -20.188, -5.409, -19.309, -7.998, -18.100, -10.450, -16.581, -12.723, -14.779, -14.779, -12.723, -16.581, -10.450, -18.100, -7.998, -19.309, -5.409, -20.188, -2.728, -20.721, -0.000, -20.900, 2.728, -20.721, 5.409, -20.188, 7.998, -19.309, 10.450, -18.100, 12.723, -16.581, 14.779, -14.779, 16.581, -12.723, 18.100, -10.450, 19.309, -7.998, 20.188, -5.409, 20.721, -2.728)
+width = 2.5
+default_color = Color(0.145, 0.42, 0.804, 1)
+closed = true
+antialiased = true
+
+[node name="EnemyArt" type="Node2D" parent="."]
+z_index = 2
+
+[node name="Red" type="Sprite2D" parent="EnemyArt"]
+position = Vector2(570, 372)
+scale = Vector2(0.1625, 0.1625)
+texture = ExtResource("red")
+
+[node name="LeftEye" type="Sprite2D" parent="EnemyArt/Red"]
+position = Vector2(-30, -18)
+scale = Vector2(0.61, 0.61)
+texture = ExtResource("eye")
+
+[node name="RightEye" type="Sprite2D" parent="EnemyArt/Red"]
+position = Vector2(24, -18)
+scale = Vector2(0.61, 0.61)
+texture = ExtResource("eye")
+
+[node name="Mouth" type="Sprite2D" parent="EnemyArt/Red"]
+position = Vector2(0, 18)
+scale = Vector2(0.61, 0.61)
+texture = ExtResource("mouth")
+
+[node name="Blue" type="Sprite2D" parent="EnemyArt"]
+position = Vector2(346, 195)
+scale = Vector2(0.1625, 0.1625)
+texture = ExtResource("blue")
+
+[node name="LeftEye" type="Sprite2D" parent="EnemyArt/Blue"]
+position = Vector2(-30, -18)
+scale = Vector2(0.61, 0.61)
+texture = ExtResource("eye")
+
+[node name="RightEye" type="Sprite2D" parent="EnemyArt/Blue"]
+position = Vector2(24, -18)
+scale = Vector2(0.61, 0.61)
+texture = ExtResource("eye")
+
+[node name="Mouth" type="Sprite2D" parent="EnemyArt/Blue"]
+position = Vector2(0, 18)
+scale = Vector2(0.61, 0.61)
+texture = ExtResource("mouth")
+
+[node name="FarScenery" type="Parallax2D" parent="."]
+z_index = -3
+repeat_size = Vector2(1920, 0)
+ignore_camera_scroll = true
+
+[node name="Cloud1" type="Sprite2D" parent="FarScenery"]
+position = Vector2(72, 155)
+scale = Vector2(1, 1)
+texture = ExtResource("cloud")
+
+[node name="Cloud2" type="Sprite2D" parent="FarScenery"]
+position = Vector2(381, 117)
+scale = Vector2(1.2, 1.2)
+texture = ExtResource("cloud")
+
+[node name="Cloud3" type="Sprite2D" parent="FarScenery"]
+position = Vector2(642, 174)
+scale = Vector2(0.83, 0.83)
+texture = ExtResource("cloud")
+
+[node name="Cloud4" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1047, 133)
+scale = Vector2(1.12, 1.12)
+texture = ExtResource("cloud")
+
+[node name="Cloud5" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1284, 181)
+scale = Vector2(0.92, 0.92)
+texture = ExtResource("cloud")
+
+[node name="Cloud6" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1680, 123)
+scale = Vector2(1.25, 1.25)
+texture = ExtResource("cloud")
+
+[node name="Cloud7" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1810, 171)
+scale = Vector2(0.74, 0.74)
+texture = ExtResource("cloud")
+
+[node name="Mountain1" type="Sprite2D" parent="FarScenery"]
+position = Vector2(161, 336.4)
+scale = Vector2(1.03, 0.82)
+texture = ExtResource("mountain")
+
+[node name="Mountain2" type="Sprite2D" parent="FarScenery"]
+position = Vector2(411, 312.4)
+scale = Vector2(0.88, 1.12)
+texture = ExtResource("mountain")
+flip_h = true
+
+[node name="Mountain3" type="Sprite2D" parent="FarScenery"]
+position = Vector2(810, 323.6)
+scale = Vector2(1.17, 0.98)
+texture = ExtResource("mountain")
+
+[node name="Mountain4" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1110, 344.4)
+scale = Vector2(0.84, 0.72)
+texture = ExtResource("mountain")
+flip_h = true
+
+[node name="Mountain5" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1377, 308.4)
+scale = Vector2(1.11, 1.17)
+texture = ExtResource("mountain")
+
+[node name="Mountain6" type="Sprite2D" parent="FarScenery"]
+position = Vector2(1726, 328.4)
+scale = Vector2(1.04, 0.92)
+texture = ExtResource("mountain")
+flip_h = true
+
+[node name="NearScenery" type="Parallax2D" parent="."]
+z_index = -2
+repeat_size = Vector2(1920, 0)
+ignore_camera_scroll = true
+
+[node name="Tree1" type="Sprite2D" parent="NearScenery"]
+position = Vector2(55, 331.4)
+scale = Vector2(0.48, 0.48)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+
+[node name="Tree2" type="Sprite2D" parent="NearScenery"]
+position = Vector2(175, 352.0)
+scale = Vector2(0.34, 0.34)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+flip_h = true
+
+[node name="Tree3" type="Sprite2D" parent="NearScenery"]
+position = Vector2(413, 321.1)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+
+[node name="Tree4" type="Sprite2D" parent="NearScenery"]
+position = Vector2(501, 347.6)
+scale = Vector2(0.37, 0.37)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+flip_h = true
+
+[node name="Tree5" type="Sprite2D" parent="NearScenery"]
+position = Vector2(745, 335.9)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+
+[node name="Tree6" type="Sprite2D" parent="NearScenery"]
+position = Vector2(917, 325.6)
+scale = Vector2(0.52, 0.52)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+flip_h = true
+
+[node name="Tree7" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1141, 343.2)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+
+[node name="Tree8" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1228, 355.0)
+scale = Vector2(0.32, 0.32)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+flip_h = true
+
+[node name="Tree9" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1487, 319.7)
+scale = Vector2(0.56, 0.56)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+
+[node name="Tree10" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1679, 337.3)
+scale = Vector2(0.44, 0.44)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+flip_h = true
+
+[node name="Tree11" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1795, 349.1)
+scale = Vector2(0.36, 0.36)
+texture = ExtResource("tree")
+modulate = Color(0.68, 0.85, 0.70, 1)
+
+[node name="Bush1" type="Sprite2D" parent="NearScenery"]
+position = Vector2(111, 386.9)
+scale = Vector2(0.84, 0.84)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush2" type="Sprite2D" parent="NearScenery"]
+position = Vector2(282, 381.1)
+scale = Vector2(1.16, 1.16)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush3" type="Sprite2D" parent="NearScenery"]
+position = Vector2(361, 388.5)
+scale = Vector2(0.75, 0.75)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush4" type="Sprite2D" parent="NearScenery"]
+position = Vector2(558, 383.3)
+scale = Vector2(1.04, 1.04)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush5" type="Sprite2D" parent="NearScenery"]
+position = Vector2(682, 386.3)
+scale = Vector2(0.87, 0.87)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush6" type="Sprite2D" parent="NearScenery"]
+position = Vector2(854, 380.8)
+scale = Vector2(1.18, 1.18)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush7" type="Sprite2D" parent="NearScenery"]
+position = Vector2(983, 388.1)
+scale = Vector2(0.77, 0.77)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush8" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1289, 383.1)
+scale = Vector2(1.05, 1.05)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush9" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1404, 386.9)
+scale = Vector2(0.84, 0.84)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush10" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1560, 381.8)
+scale = Vector2(1.12, 1.12)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="Bush11" type="Sprite2D" parent="NearScenery"]
+position = Vector2(1870, 385.4)
+scale = Vector2(0.92, 0.92)
+texture = ExtResource("bush")
+modulate = Color(0.69, 0.85, 0.52, 1)
+
+[node name="GroundPreview" type="Node2D" parent="."]
+position = Vector2(0, 402)
+z_index = -1
+
+[node name="Tile1Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(225, 23)
+texture = ExtResource("grass")
+
+[node name="Tile1Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(225, 69)
+texture = ExtResource("soil")
+
+[node name="Tile1Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(225, 115)
+texture = ExtResource("soil")
+
+[node name="Tile2Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(271, 23)
+texture = ExtResource("grass")
+
+[node name="Tile2Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(271, 69)
+texture = ExtResource("soil")
+
+[node name="Tile2Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(271, 115)
+texture = ExtResource("soil")
+
+[node name="Tile3Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(317, 23)
+texture = ExtResource("grass")
+
+[node name="Tile3Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(317, 69)
+texture = ExtResource("soil")
+
+[node name="Tile3Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(317, 115)
+texture = ExtResource("soil")
+
+[node name="Tile4Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(363, 23)
+texture = ExtResource("grass")
+
+[node name="Tile4Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(363, 69)
+texture = ExtResource("soil")
+
+[node name="Tile4Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(363, 115)
+texture = ExtResource("soil")
+
+[node name="Tile5Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(409, 23)
+texture = ExtResource("grass")
+
+[node name="Tile5Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(409, 69)
+texture = ExtResource("soil")
+
+[node name="Tile5Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(409, 115)
+texture = ExtResource("soil")
+
+[node name="Tile6Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(455, 23)
+texture = ExtResource("grass")
+
+[node name="Tile6Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(455, 69)
+texture = ExtResource("soil")
+
+[node name="Tile6Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(455, 115)
+texture = ExtResource("soil")
+
+[node name="Tile7Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(541, 23)
+texture = ExtResource("grass")
+
+[node name="Tile7Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(541, 69)
+texture = ExtResource("soil")
+
+[node name="Tile7Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(541, 115)
+texture = ExtResource("soil")
+
+[node name="Tile8Row1" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(587, 23)
+texture = ExtResource("grass")
+
+[node name="Tile8Row2" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(587, 69)
+texture = ExtResource("soil")
+
+[node name="Tile8Row3" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(587, 115)
+texture = ExtResource("soil")
+
+[node name="LeftRim" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(474, 69)
+texture = ExtResource("ground_edge")
+
+[node name="RightRim" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(522, 69)
+texture = ExtResource("ground_edge")
+flip_h = true
+
+[node name="JumpArrow" type="Sprite2D" parent="GroundPreview"]
+position = Vector2(455, 23)
+texture = ExtResource("jump_arrow")

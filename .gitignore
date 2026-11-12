@@ -1,6 +1,22 @@
+# Godot
 .godot/
+*.translation
+export.cfg
+export_presets.cfg
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# IDE / OS
 .idea/
 .vscode/
-__pycache__/
-*.pyc
+.DS_Store
+Thumbs.db
+
+# Local temporary files
 *.tmp
