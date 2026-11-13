@@ -1,93 +1,84 @@
-extends CharacterBody2D
+extends Node2D
+## Renders a single interruptible action over the supplied world position.
 
-signal attack_pressed
-signal jump_pressed
+const FIST := preload("res://assets/shape/pink_hand_closed.png")
+const FOCUSED_EYE := preload("res://assets/shape/facial_part_eye_half_top.png")
+const GRIT := preload("res://assets/shape/facial_part_mouth_angry.png")
+const SMIRK := preload("res://assets/shape/facial_part_mouth_smirk.png")
 
-@export var jump_speed := 330.0
-@export var gravity := 900.0
-@export var attack_duration := 0.2
-## Center-to-fist distance in sprite pixels, measured from attack.png at alpha >= 128.
-@export var attack_reach := 24.0
+const ACTION_LENGTHS := [0.24, 0.30, 0.46]
 
-var spawn := Vector2.ZERO
-var automatic := false
-var music_controlled := false
-var target_x := 0.0
-var active := true
-var jump_buffer := 0.0
-var coyote := 0.0
-var attack_time_left := 0.0
+var action := -1
+var elapsed := 0.0
 
-@onready var collision_shape: CollisionShape2D = $CollisionShape2D
-@onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var visuals: Node2D = $Visuals
+@onready var visuals_rest_rotation := visuals.rotation
+@onready var rig: Node2D = $Visuals/BodyRig
+@onready var front_hand: Sprite2D = $Visuals/FrontHand
+@onready var front_rest := front_hand.position
+@onready var rig_rest := rig.transform
+@onready var left_eye: Sprite2D = $Visuals/BodyRig/LeftEye
+@onready var right_eye: Sprite2D = $Visuals/BodyRig/RightEye
+@onready var mouth_sprite: Sprite2D = $Visuals/BodyRig/Mouth
+@onready var idle_textures := [left_eye.texture, right_eye.texture, mouth_sprite.texture, front_hand.texture]
+@onready var idle_scales := [left_eye.scale, right_eye.scale, mouth_sprite.scale, front_hand.scale]
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not active or not music_controlled:
+func set_walk_sway(angle: float) -> void:
+	visuals.rotation = visuals_rest_rotation + angle
+
+func play_action(next: int) -> void:
+	action = next
+	elapsed = 0.0
+	_apply_pose()
+
+func _process(delta: float) -> void:
+	if action < 0:
 		return
-	if InputMap.has_action("jump") and event.is_action_pressed("jump") and not event.is_echo():
-		jump_buffer = .12
-		jump_pressed.emit()
-	if InputMap.has_action("attack") and event.is_action_pressed("attack") and not event.is_echo():
-		attack_time_left = attack_duration
-		_play_animation("attack", true)
-		attack_pressed.emit()
+	elapsed += delta
+	if elapsed >= ACTION_LENGTHS[action]:
+		action = -1
+	_apply_pose()
 
-func _physics_process(delta: float) -> void:
-	attack_time_left = maxf(0, attack_time_left-delta)
-	if not active:
-		animated_sprite.pause()
-		return
-	velocity.y += gravity * delta
-	if music_controlled:
-		velocity.x = (target_x-position.x) / delta
-		jump_buffer = maxf(0, jump_buffer-delta)
-		coyote = .08 if is_on_floor() else maxf(0, coyote-delta)
-		if jump_buffer > 0 and coyote > 0:
-			velocity.y = -jump_speed
-			jump_buffer = 0
-			coyote = 0
-	elif not automatic:
-		velocity.x = Input.get_axis("ui_left", "ui_right") * 120
-		if Input.is_physical_key_pressed(KEY_A):
-			velocity.x = -120
-		if Input.is_physical_key_pressed(KEY_D):
-			velocity.x = 120
-		if Input.is_action_just_pressed("ui_accept") and is_on_floor():
-			velocity.y = -jump_speed
-		if Input.is_physical_key_pressed(KEY_R) or position.y > 800:
-			position = spawn
-			velocity = Vector2.ZERO
-	move_and_slide()
-	_update_animation()
+func _apply_pose() -> void:
+	var phase := elapsed / float(ACTION_LENGTHS[action]) if action >= 0 else 0.0
+	var drive := 0.0
+	var windup := 0.0
+	if action == 0 or action == 1:
+		windup = smoothstep(0.0, 0.12, phase) * (1.0 - smoothstep(0.12, 0.32, phase))
+		drive = smoothstep(0.10, 0.31, phase) * (1.0 - smoothstep(0.33, 1.0, phase))
 
-func get_collision_bounds() -> Rect2:
-	if collision_shape.shape == null or collision_shape.disabled:
-		return Rect2()
-	return collision_shape.global_transform * collision_shape.shape.get_rect()
+	var lean := 0.0
+	var shift := Vector2.ZERO
+	var scale_y := 1.0
+	var front := front_rest
+	if action == 0:
+		lean = 0.33 * drive - 0.15 * windup
+		shift = Vector2(7.0 * drive - 5.0 * windup, 0)
+		front += Vector2(35.0 * drive - 13.0 * windup, -7.0 * drive + 5.0 * windup)
+	elif action == 1:
+		lean = -0.22 * drive + 0.21 * windup
+		shift = Vector2(-3.0 * drive, 6.0 * windup - 7.0 * drive)
+		scale_y += 0.13 * drive - 0.12 * windup
+		front += Vector2(8.0 * windup - 12.0 * drive, 13.0 * windup - 65.0 * drive)
+	elif action == 2:
+		var lift := sin(PI * phase)
+		scale_y += 0.12 * lift * cos(PI * phase)
+		front.y -= lift * 17.0
 
-func get_attack_tip() -> Vector2:
-	# Sprite transform applies editor position/scale without changing body collision.
-	return animated_sprite.to_global(animated_sprite.offset + Vector2(attack_reach, 0))
+	var punching := action == 0 or action == 1
+	rig.transform = rig_rest * Transform2D(lean, Vector2(1.0 / scale_y, scale_y), 0.0, shift)
+	$Visuals/BodyRig/LeftBrow.visible = punching
+	$Visuals/BodyRig/RightBrow.visible = punching
+	front_hand.position = front
+	_set_sprite(left_eye, 0, FOCUSED_EYE if punching else null)
+	_set_sprite(right_eye, 1, FOCUSED_EYE if punching else null)
+	_set_sprite(mouth_sprite, 2, (GRIT if action == 0 else SMIRK) if punching else null)
+	_set_sprite(front_hand, 3, FIST if punching else null)
 
-func _update_animation() -> void:
-	if attack_time_left > 0:
-		_play_animation("attack")
-	elif not is_on_floor():
-		_play_animation("jump")
-	elif absf(velocity.x) > 1:
-		_play_animation("walk")
-	else:
-		_play_animation("idle")
-
-func _play_animation(animation_name: StringName, restart := false) -> void:
-	# SpriteFrames are assigned manually in the editor, never generated at runtime.
-	var frames := animated_sprite.sprite_frames
-	if frames == null or not frames.has_animation(animation_name):
-		return
-	if restart:
-		animated_sprite.stop()
-	if animated_sprite.animation != animation_name or restart or not animated_sprite.is_playing():
-		# Non-looping animations stay on their final frame until state changes.
-		if animated_sprite.animation == animation_name and not frames.get_animation_loop(animation_name) and not restart:
-			return
-		animated_sprite.play(animation_name)
+func _set_sprite(sprite: Sprite2D, index: int, action_texture: Texture2D) -> void:
+	var idle_texture: Texture2D = idle_textures[index]
+	var idle_scale: Vector2 = idle_scales[index]
+	sprite.texture = action_texture if action_texture else idle_texture
+	sprite.scale = idle_scale
+	if action_texture and idle_texture:
+		sprite.scale *= float(idle_texture.get_width()) / action_texture.get_width()

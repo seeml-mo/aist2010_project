@@ -1,180 +1,219 @@
 extends Node2D
-## Audio is the master clock. Horizontal position is a function of song time.
 
-const Player = preload("res://scripts/player.gd")
-const Map = preload("res://scripts/json_map.gd")
-const Spawner = preload("res://scripts/enemy_spawner.gd")
+const ChartLoader = preload("res://scripts/chart_loader.gd")
+const ChartRun = preload("res://scripts/chart_level.gd")
+const ACTION_LABELS := ["STRAIGHT", "UPPERCUT", "JUMP"]
+const ENEMY_SPEED := 380.0
+const ENEMY_AXES := [Vector2.RIGHT, Vector2.UP]
+const ENEMY_FLOAT := 9.0
+const WALK_FLOAT := 4.0
+const ENEMY_SWAY := deg_to_rad(9.0)
+const WALK_SWAY := deg_to_rad(4.0)
+const SPEED := 220.0
+const JUMP_DURATION := 0.46
 
-@onready var player: Player = $Player
-@onready var world: Map = $World
-@onready var enemy_spawner: Spawner = $EnemySpawner
-@onready var audio: AudioStreamPlayer = $Music
-@onready var camera: Camera2D = $Camera2D
-@onready var status: Label = $HUD/TopPanel/StatusLabel
-@onready var timer_label: Label = $HUD/TopPanel/TimerLabel
+@export var chart_path := "res://assets/maps/chart_band.json"
+@export var ground_surface: Texture2D
+@export var ground_fill: Texture2D
+@export var ground_edge: Texture2D
+const TILE_SIZE := 46.0
+const MISSED_GROUND_ALPHA := 0.60
 
-var music: Dictionary
+@onready var music: AudioStreamPlayer = $Music
+@onready var performer = $Performer
+@onready var anchor: Vector2 = performer.position
+@onready var targets: Array[Node2D] = [$Performer/StraightTarget, $Performer/UppercutTarget]
+@onready var enemy_art: Array[Sprite2D] = [$EnemyArt/Red, $EnemyArt/Blue]
+@onready var far_scenery: Parallax2D = $FarScenery
+@onready var near_scenery: Parallax2D = $NearScenery
+@onready var status: Label = $HUD/Status
+@onready var jump_arrow: Sprite2D = $GroundPreview/JumpArrow
+
+var run: ChartRun
+var time := 0.0
+var duration := 0.0
+var ended := false
 var feedback := ""
-var feedback_until := 0.0
-var song_time := 0.0
-var finished := false
-var failed := false
-var jump_hits := 0
-var attack_hits := 0
-var misses := 0
-var jump_attempts: Dictionary = {}
-var beat_pulse := 0.0
+var jump_started_at := -10.0
+var enemy_sprites: Dictionary = {}
 
 func _ready() -> void:
-	var path := "res://assets/maps/music_demo.json"
 	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--map="):
-			path = arg.trim_prefix("--map=")
-	var data = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if not data is Dictionary or not data.has("music"):
-		push_error("Map JSON must contain a music object: " + path)
-		get_tree().quit(1)
+		if arg.begins_with("--chart="):
+			chart_path = arg.trim_prefix("--chart=")
+	var result := ChartLoader.load_chart(chart_path)
+	if not result.ok:
+		status.text = result.error
 		return
-	music = data.music
-	if not world.load_map(path):
-		push_error(world.last_error)
-		get_tree().quit(1)
+	music.stream = load(str(result.chart.audio.stream)) as AudioStream
+	if music.stream == null:
+		status.text = "Could not load chart audio."
 		return
-	player.automatic = true
-	player.music_controlled = true
-	player.spawn = world.spawn
-	player.position = world.spawn
-	player.target_x = world.spawn.x
-	camera.position = Vector2(player.position.x+256, 270)
-	audio.stream = load(str(music.stream))
-	enemy_spawner.configure(music.attacks, world.spawn.x, music.speed, music.floor_y)
-	# Start only after at least one physics frame lets the character settle.
-	await get_tree().physics_frame
-	audio.play()
-	print("MUSIC_READY beats=", music.beats.size(), " jumps=", music.jumps.size(), " attacks=", music.attacks.size())
+	duration = music.stream.get_length()
+	run = ChartRun.new(result.chart.chart.notes)
+	run.judged.connect(func(lane: int, hit: bool, perfect: bool):
+		var result_label := "PERFECT" if perfect else ("HIT" if hit else "MISS")
+		feedback = "%s · %s" % [result_label, ACTION_LABELS[lane]]
+		if run.health == 0:
+			music.stop())
+	music.finished.connect(_finish)
+	for template in enemy_art:
+		template.hide()
+	$GroundPreview.hide()
+	music.play()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if InputMap.has_action("restart") and event.is_action_pressed("restart") and not event.is_echo():
+	if event.is_action_pressed("restart"):
 		get_tree().reload_current_scene()
-
-func _physics_process(_delta: float) -> void:
-	if player == null:
 		return
-	if not finished and not failed:
-		if audio.playing:
-			var audio_clock := audio.get_playback_position()+AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency()
-			song_time = maxf(song_time, maxf(0, audio_clock))
-		elif song_time > float(music.duration)-.2:
-			song_time = float(music.duration)
-		player.target_x = world.spawn.x + song_time*float(music.speed)
-		for i in range(music.jumps.size()):
-			if song_time > float(music.jumps[i].time)+.25 and not jump_attempts.has(i):
-				jump_attempts[i] = false
-		enemy_spawner.update_time(song_time, player.global_position)
-		if player.position.y > float(music.floor_y)+95:
-			failed = true
-			player.active = false
-			audio.stop()
-		elif song_time >= float(music.duration):
-			finished = true
-			player.active = false
-			audio.stop()
-	camera.position.x = player.position.x+256
-	beat_pulse = 0
-	for beat in music.beats:
-		beat_pulse = maxf(beat_pulse, maxf(0, 1-absf(song_time-float(beat))/.13))
-	_update_hud()
+	if run == null or ended or run.health <= 0:
+		return
+	for lane in range(ChartRun.ACTIONS.size()):
+		if event.is_action_pressed(ChartRun.ACTIONS[lane]):
+			_sample_clock()
+			performer.play_action(lane)
+			if lane == 2:
+				jump_started_at = time
+			run.press(lane, time)
+			return
+
+func _sample_clock() -> void:
+	if music.playing:
+		var clock := music.get_playback_position() + AudioServer.get_time_since_last_mix() - AudioServer.get_output_latency()
+		time = maxf(time, clampf(clock, 0.0, duration))
+
+func _held_actions() -> Array[bool]:
+	return [Input.is_action_pressed("attack"), Input.is_action_pressed("defend"), Input.is_action_pressed("jump")]
+
+func _finish() -> void:
+	time = duration
+	run.advance(time, _held_actions(), true)
+	ended = true
+
+func _process(_delta: float) -> void:
+	if run == null:
+		return
+	if not ended and run.health > 0:
+		_sample_clock()
+		run.advance(time, _held_actions())
+	var jump := clampf((time - jump_started_at) / JUMP_DURATION, 0.0, 1.0)
+	var lift := 48.0 * 4.0 * jump * (1.0 - jump)
+	var walk_wave := -cos(TAU * 4.0 * time)
+	var walk_weight := 1.0 - sin(PI * jump)
+	var walk_bob := WALK_FLOAT * (0.5 + 0.5 * walk_wave) * walk_weight
+	performer.position = anchor - Vector2(0, lift + walk_bob)
+	performer.set_walk_sway(WALK_SWAY * walk_wave * walk_weight)
+	_update_scene_art()
+	var message := feedback
+	if run.health == 0:
+		message = "OUT OF HEALTH · R to restart"
+	elif ended:
+		message = "TRACK COMPLETE · R to replay"
+	status.text = "HP %d/5   HIT %d   MISS %d   %.1f / %.1fs\nJ Straight   K Uppercut   F / Space Jump   R Restart\n%s" % [
+		run.health, run.hits, run.misses, time, duration, message]
 	queue_redraw()
 
-func _jump() -> void:
-	var best := -1
-	var distance := .18
-	for i in range(music.jumps.size()):
-		var d := absf(float(music.jumps[i].time)-song_time)
-		if d < distance and not jump_attempts.has(i):
-			best = i
-			distance = d
-	if best >= 0 and (player.is_on_floor() or player.coyote > 0):
-		jump_attempts[best] = true
-		jump_hits += 1
-		_feedback("ON BEAT" if distance < .08 else "JUMP", Color("6ce4c0"))
-
-func _attack() -> void:
-	if not enemy_spawner.try_attack(song_time, player.global_position, player.get_collision_bounds(), player.get_attack_tip()):
-		_feedback("NO TARGET IN REACH", Color("8d9db3"))
-
-func _on_enemy_defeated(_event_index: int, _timing_error: float) -> void:
-	attack_hits += 1
-	_feedback("HIT", Color("fff0ae"))
-
-func _on_enemy_missed(_event_index: int) -> void:
-	misses += 1
-	_feedback("MISSED TARGET", Color("fb818f"))
-
-func _feedback(text: String, color: Color) -> void:
-	feedback = text
-	feedback_until = song_time+.45
-	status.modulate = color
-
-func _update_hud() -> void:
-	timer_label.text = "%04.1f / 30s   |   %.1f BPM\nJUMP %d   HIT %d   MISS %d" % [song_time, music.bpm, jump_hits, attack_hits, misses]
-	if failed:
-		status.text = "FELL INTO GAP  /  Press R to retry"
-		status.modulate = Color("fb818f")
-	elif finished:
-		status.text = "TRACK COMPLETE  /  Press R to play again"
-		status.modulate = Color("6ce4c0")
-	elif song_time < feedback_until:
-		status.text = feedback
-	else:
-		var next_time := INF
-		var message := "FOLLOW THE MUSIC"
-		for event in music.jumps:
-			var t := float(event.time)
-			if t > song_time and t < next_time:
-				next_time = t
-				message = "GAP AHEAD  /  F or SPACE"
-		for event in music.attacks:
-			var t := float(event.time)
-			if t > song_time and t < next_time:
-				next_time = t
-				message = "TARGET AHEAD  /  J or K"
-		status.text = message if next_time-song_time < 2.0 else "FOLLOW THE MUSIC"
-		status.modulate = Color("6ce4c0")
-
 func _draw() -> void:
-	if player == null:
+	if run == null:
 		return
-	var left := camera.position.x-480
-	var right := left+960
-	var floor_y := float(music.floor_y)
-	# Quiet background contours retain the visual language of the video.
-	for y in [205, 260, 315]:
-		var points := PackedVector2Array()
-		for x in range(int(left)-30, int(right)+40, 24):
-			points.append(Vector2(x, y+sin(x*.008)*8+sin(x*.023)*3))
-		draw_polyline(points, Color("182b3a"), 1.5, true)
-	for beat in music.beats:
-		var x := world.spawn.x+float(beat)*float(music.speed)
-		if x < left or x > right:
+	var segment_start := 0.0
+	var left_edge := false
+	for note in run.notes:
+		if note.lane != 2:
 			continue
-		draw_circle(Vector2(x, floor_y+48), 3, Color("52716f"))
-	for event in music.jumps:
-		var x := world.spawn.x+float(event.time)*float(music.speed)
-		if x < left-100 or x > right+100:
+		var x := anchor.x + (float(note.time) - time) * SPEED
+		var gap_start := x + SPEED * 0.14
+		var gap_end := gap_start + SPEED * 0.18
+		if gap_end <= 0 or gap_start >= 960:
 			continue
-		var faded := float(event.time) < song_time-.2
-		var color := Color("42645f") if faded else Color("6ce4c0")
-		draw_line(Vector2(x, floor_y-10), Vector2(x, floor_y+12), color, 2)
-		draw_string(ThemeDB.fallback_font, Vector2(x-7, floor_y+32), "F", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, color)
-		var points := PackedVector2Array()
-		for k in range(22):
-			var t := float(k)/21*.73
-			points.append(Vector2(x+t*float(music.speed), floor_y-22-330*t+450*t*t))
-		draw_polyline(points, Color(color, .26), 1.0, true)
-	draw_line(Vector2(player.position.x, 124), Vector2(player.position.x, 446), Color("314e60"), 1)
-	draw_circle(Vector2(player.position.x, floor_y+48), 6+beat_pulse*4, Color("6ce4c0"))
+		_draw_solid_ground(segment_start, gap_start, left_edge, true)
+		if note.state == ChartRun.State.MISSED:
+			_draw_ground(maxf(segment_start, gap_start), gap_end, MISSED_GROUND_ALPHA)
+		segment_start = maxf(segment_start, gap_end)
+		left_edge = true
+	_draw_solid_ground(segment_start, 960.0, left_edge, false)
+	for note in run.notes:
+		if note.lane != 2 or note.state != ChartRun.State.PENDING:
+			continue
+		var x := anchor.x + (float(note.time) - time) * SPEED
+		var center := Vector2(x, anchor.y + jump_arrow.position.y)
+		var size := jump_arrow.texture.get_size() * jump_arrow.scale
+		var rect := Rect2(center - size * 0.5, size)
+		if rect.end.x > 0 and rect.position.x < 960:
+			draw_texture_rect(jump_arrow.texture, rect, false, jump_arrow.modulate)
 
-func _exit_tree() -> void:
-	if is_instance_valid(audio):
-		audio.stop()
+func _update_scene_art() -> void:
+	far_scenery.scroll_offset.x = -time * 15.0
+	near_scenery.scroll_offset.x = -time * 38.0
+
+	for target in targets:
+		target.modulate.a = 0.66
+	for index in range(run.notes.size()):
+		var note: Dictionary = run.notes[index]
+		var lane := int(note.lane)
+		if lane == 2:
+			continue
+		var remaining := float(note.time) - time
+		var hit: bool = note.state == ChartRun.State.HIT
+		var age := time - float(note.get("resolved_at", time))
+		if remaining > 0.9 or note.state == ChartRun.State.MISSED or (hit and age > 0.27):
+			if enemy_sprites.has(index):
+				enemy_sprites[index].queue_free()
+				enemy_sprites.erase(index)
+			continue
+
+		var target := targets[lane]
+		var axis: Vector2 = ENEMY_AXES[lane]
+		var offset := remaining * ENEMY_SPEED
+		var flight_wave := 0.0
+		if hit:
+			var impact_offset := 0.0 if note.has("duration") else offset + age * ENEMY_SPEED
+			offset = impact_offset + age * 620.0
+		elif note.state == ChartRun.State.HOLDING:
+			offset = 0.0
+		elif absf(remaining) <= ChartRun.PERFECT_WINDOW:
+			target.modulate.a = 1.0
+		else:
+			var float_weight := smoothstep(ChartRun.PERFECT_WINDOW, 0.18, absf(remaining))
+			flight_wave = float_weight * sin(TAU * 2.5 * remaining)
+
+		if not enemy_sprites.has(index):
+			var sprite := enemy_art[lane].duplicate() as Sprite2D
+			$EnemyArt.add_child(sprite)
+			sprite.show()
+			enemy_sprites[index] = sprite
+		var sprite: Sprite2D = enemy_sprites[index]
+		sprite.global_position = target.global_position + axis * offset + axis.orthogonal() * ENEMY_FLOAT * flight_wave
+		sprite.rotation = enemy_art[lane].rotation + (age * 13.0 if hit else ENEMY_SWAY * flight_wave)
+
+func _draw_solid_ground(from_x: float, to_x: float, left_edge: bool, right_edge: bool) -> void:
+	_draw_ground(from_x, to_x)
+	var edge_width := minf(ground_edge.get_width(), (to_x - from_x) * 0.5)
+	if edge_width <= 0:
+		return
+	var edge_size := Vector2(edge_width, TILE_SIZE * 3.0)
+	if left_edge:
+		draw_set_transform(Vector2(from_x + edge_width, anchor.y), 0.0, Vector2(-1.0, 1.0))
+		draw_texture_rect(ground_edge, Rect2(Vector2.ZERO, edge_size), false)
+		draw_set_transform(Vector2.ZERO)
+	if right_edge:
+		draw_texture_rect(ground_edge, Rect2(Vector2(to_x - edge_width, anchor.y), edge_size), false)
+
+func _draw_ground(from_x: float, to_x: float, opacity: float = 1.0) -> void:
+	var left := maxf(0.0, from_x)
+	var right := minf(960.0, to_x)
+	if right <= left:
+		return
+	var scroll := fposmod(time * SPEED - anchor.x, TILE_SIZE)
+	var first := floori((left + scroll) / TILE_SIZE)
+	var last := ceili((right + scroll) / TILE_SIZE)
+	for column in range(first, last):
+		var tile_x := column * TILE_SIZE - scroll
+		var start := maxf(tile_x, left)
+		var width := minf(tile_x + TILE_SIZE, right) - start
+		for row in range(3):
+			var texture := ground_surface if row == 0 else ground_fill
+			var ratio := float(texture.get_width()) / TILE_SIZE
+			var source := Rect2((start - tile_x) * ratio, 0, width * ratio, texture.get_height())
+			var destination := Rect2(start, anchor.y + row * TILE_SIZE, width, TILE_SIZE)
+			draw_texture_rect_region(texture, destination, source, Color(1, 1, 1, opacity))
