@@ -13,7 +13,7 @@ Godot 4.7.2 项目。主场景是 `scenes/game.tscn`；谱面预览场景是 `sc
 
 - 黄色 ↑ 提示跳跃时机。地面和坑洞是谱面可视化，跳跃用音频时钟驱动的动画表现
 - 从右方飞入的红色敌人对应中高频打击乐（如军鼓、踩镲），从正上方飞入的蓝色敌人对应中高频谐波（如人声、旋律、铺底音色），黄色箭头对应低频打击瞬态（如底鼓）
-- 长按节点显示为长条。漏掉攻击、防御或跳跃、提前松开长按，各扣 1 点血。初始 5 点血，归零后死亡。左上角显示血量、命中、漏判、进度和操作键。敌人中心进入对应判定框时出拳为 Perfect（±55 ms），普通命中窗口为 ±120 ms
+- 长按节点显示为长条。判定分为 Perfect / Good / Miss 三档：误差在 ±55 ms 内为 Perfect，在对应输入窗口内（直拳/上勾拳 ±120 ms，跳跃 ±90 ms）为 Good，超时漏按或长按提前松开为 Miss。左上角显示三档计数、进度和操作键
 
 ## 目录
 
@@ -22,13 +22,13 @@ Godot 4.7.2 项目。主场景是 `scenes/game.tscn`；谱面预览场景是 `sc
 - `scenes/player.tscn`、`scenes/hud.tscn`
 - `scripts/generate_chart.py`：分带 onset 谱面生成器（唯一算法）
 - `scripts/chart_loader.gd`：chart JSON 加载与校验
-- `scripts/chart_level.gd`：独立于场景的谱面判定与血量
+- `scripts/chart_level.gd`：独立于场景的谱面判定（Perfect / Good / Miss）
 - `scripts/music_game.gd`：音频时钟、输入、关卡绘制和左上角文字
 - `scripts/chart_preview.gd`：谱面预览
 - `scripts/player.gd`：纯显示的角色动画
 - `assets/maps/chart_band.json`：当前谱面
-- `assets/scribble/`：旧版 Kenney Scribble Platformer 图像与授权文件
-- `assets/shape/`：当前 Kenney Shape Characters 图像与授权文件
+- `assets/shape/`：游戏内使用的 Kenney Shape Characters 素材子集（Double 分辨率）与自定义 SVG
+- `assets/kenney_shape_characters/`：完整的 Kenney Shape Characters 素材包（Default / Double PNG、Spritesheet、Vector 与授权文件）
 - `assets/voxel_30s.ogg`：音乐
 
 ## 谱面生成

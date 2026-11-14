@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "audio": {
+    "stream": "res://assets/voxel_30s.ogg",
+    "title": "Voxel Revolution - Hold Debug",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "duration": 30.0,
+    "offset": 0.0
+  },
+  "timing": {
+    "bpm": 121.956
+  },
+  "chart": {
+    "lanes": ["attack", "defend", "jump"],
+    "notes": [
+      {"time": 2.01197, "lane": 0, "duration": 0.48889},
+      {"time": 3.97751, "lane": 1, "duration": 0.98775},
+      {"time": 6.42195, "lane": 0, "duration": 1.46667},
+      {"time": 6.93079, "lane": 1},
+      {"time": 8.37751, "lane": 2},
+      {"time": 9.37524, "lane": 0, "duration": 1.51655},
+      {"time": 9.37524, "lane": 1, "duration": 0.99773},
+      {"time": 11.84961, "lane": 1, "duration": 1.46667},
+      {"time": 12.32853, "lane": 2},
+      {"time": 14.29406, "lane": 0, "duration": 0.48889},
+      {"time": 15.29179, "lane": 0},
+      {"time": 16.26957, "lane": 1, "duration": 0.49887},
+      {"time": 17.25732, "lane": 1},
+      {"time": 18.24508, "lane": 0, "duration": 2.45442},
+      {"time": 18.74395, "lane": 1, "duration": 1.45668},
+      {"time": 19.23283, "lane": 2},
+      {"time": 22.16617, "lane": 1, "duration": 0.98775},
+      {"time": 24.14168, "lane": 0, "duration": 0.48889},
+      {"time": 26.09723, "lane": 0},
+      {"time": 27.09497, "lane": 1, "duration": 1.46666}
+    ]
+  }
+}
