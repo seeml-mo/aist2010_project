@@ -2,7 +2,9 @@ extends Node2D
 
 const ChartLoader = preload("res://scripts/chart_loader.gd")
 const ChartRun = preload("res://scripts/chart_level.gd")
-const ACTION_LABELS := ["STRAIGHT", "UPPERCUT", "JUMP"]
+const HoldTail = preload("res://scenes/hold_tail.tscn")
+const HitFeedback = preload("res://scenes/hit_feedback.tscn")
+const MENU_SCENE := "res://scenes/song_menu.tscn"
 const ENEMY_SPEED := 380.0
 const ENEMY_AXES := [Vector2.RIGHT, Vector2.UP]
 const ENEMY_FLOAT := 9.0
@@ -26,49 +28,66 @@ const MISSED_GROUND_ALPHA := 0.60
 @onready var enemy_art: Array[Sprite2D] = [$EnemyArt/Red, $EnemyArt/Blue]
 @onready var far_scenery: Parallax2D = $FarScenery
 @onready var near_scenery: Parallax2D = $NearScenery
-@onready var status: Label = $HUD/Status
+@onready var hud := $HUD
 @onready var jump_arrow: Sprite2D = $GroundPreview/JumpArrow
 
 var run: ChartRun
 var time := 0.0
 var duration := 0.0
 var ended := false
-var feedback := ""
 var jump_started_at := -10.0
 var enemy_sprites: Dictionary = {}
 
 func _ready() -> void:
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--chart="):
-			chart_path = arg.trim_prefix("--chart=")
-	var result := ChartLoader.load_chart(chart_path)
-	if not result.ok:
-		status.text = result.error
-		return
-	music.stream = load(str(result.chart.audio.stream)) as AudioStream
-	if music.stream == null:
-		status.text = "Could not load chart audio."
-		return
-	duration = music.stream.get_length()
-	run = ChartRun.new(result.chart.chart.notes)
-	run.judged.connect(func(lane: int, hit: bool, perfect: bool):
-		var result_label := "PERFECT" if perfect else ("HIT" if hit else "MISS")
-		feedback = "%s · %s" % [result_label, ACTION_LABELS[lane]]
-		if run.health == 0:
-			music.stop())
-	music.finished.connect(_finish)
+	hud.pause_requested.connect(_toggle_pause)
+	hud.resume_requested.connect(_toggle_pause)
+	hud.restart_requested.connect(_restart)
+	hud.menu_requested.connect(_return_to_menu)
 	for template in enemy_art:
 		template.hide()
 	$GroundPreview.hide()
+
+	var selected := str(get_tree().root.get_meta("selected_chart", ""))
+	if not selected.is_empty():
+		chart_path = selected
+	else:
+		for arg in OS.get_cmdline_user_args():
+			if arg.begins_with("--chart="):
+				chart_path = arg.trim_prefix("--chart=")
+	var result := ChartLoader.load_chart(chart_path)
+	if not result.ok:
+		hud.show_error(result.error)
+		return
+	var audio_path := str(result.chart.audio.stream)
+	if ResourceLoader.exists(audio_path, "AudioStream"):
+		music.stream = load(audio_path) as AudioStream
+	if music.stream == null:
+		hud.show_error("Could not load chart audio.")
+		return
+	duration = music.stream.get_length()
+	run = ChartRun.new(result.chart.chart.notes)
+	hud.set_track(str(result.chart.audio.get("title", chart_path.get_file().get_basename())), duration)
+	hud.update_counts(run)
+	run.judged.connect(_on_judged)
+	music.finished.connect(_finish)
 	music.play()
 
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and run != null and not ended:
+		get_viewport().set_input_as_handled()
+		_toggle_pause()
+	elif event.is_action_pressed("restart") and run != null:
+		get_viewport().set_input_as_handled()
+		_restart()
+
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("restart"):
-		get_tree().reload_current_scene()
-		return
-	if run == null or ended or run.health <= 0:
+	if run == null or ended or get_tree().paused or event.is_echo():
 		return
 	for lane in range(ChartRun.ACTIONS.size()):
+		if lane < targets.size() and event.is_action_released(ChartRun.ACTIONS[lane]):
+			_sample_clock()
+			run.release(lane, time)
+			return
 		if event.is_action_pressed(ChartRun.ACTIONS[lane]):
 			_sample_clock()
 			performer.play_action(lane)
@@ -76,6 +95,37 @@ func _unhandled_input(event: InputEvent) -> void:
 				jump_started_at = time
 			run.press(lane, time)
 			return
+
+func _toggle_pause() -> void:
+	if run == null or ended:
+		return
+	if get_tree().paused:
+		hud.hide_pause()
+		get_tree().paused = false
+	else:
+		_sample_clock()
+		get_tree().paused = true
+		hud.show_pause()
+
+func _restart() -> void:
+	music.stop()
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+func _return_to_menu() -> void:
+	music.stop()
+	get_tree().paused = false
+	get_tree().change_scene_to_file(MENU_SCENE)
+
+func _on_judged(lane: int, judgement: int) -> void:
+	hud.update_counts(run)
+	if ended:
+		return
+	var effect := HitFeedback.instantiate()
+	effect.judgement = judgement
+	var impact := to_local(targets[lane].global_position) if lane < targets.size() else anchor + Vector2(0, jump_arrow.position.y)
+	effect.position = impact
+	$Feedback.add_child(effect)
 
 func _sample_clock() -> void:
 	if music.playing:
@@ -87,15 +137,19 @@ func _held_actions() -> Array[bool]:
 
 func _finish() -> void:
 	time = duration
-	run.advance(time, _held_actions(), true)
 	ended = true
+	run.advance(time, _held_actions(), true)
+	hud.update_counts(run)
+	hud.update_time(time)
+	_update_scene_art()
+	queue_redraw()
+	hud.show_results(run)
 
 func _process(_delta: float) -> void:
-	if run == null:
+	if run == null or ended or get_tree().paused:
 		return
-	if not ended and run.health > 0:
-		_sample_clock()
-		run.advance(time, _held_actions())
+	_sample_clock()
+	run.advance(time, _held_actions())
 	var jump := clampf((time - jump_started_at) / JUMP_DURATION, 0.0, 1.0)
 	var lift := 48.0 * 4.0 * jump * (1.0 - jump)
 	var walk_wave := -cos(TAU * 4.0 * time)
@@ -104,13 +158,7 @@ func _process(_delta: float) -> void:
 	performer.position = anchor - Vector2(0, lift + walk_bob)
 	performer.set_walk_sway(WALK_SWAY * walk_wave * walk_weight)
 	_update_scene_art()
-	var message := feedback
-	if run.health == 0:
-		message = "OUT OF HEALTH · R to restart"
-	elif ended:
-		message = "TRACK COMPLETE · R to replay"
-	status.text = "HP %d/5   HIT %d   MISS %d   %.1f / %.1fs\nJ Straight   K Uppercut   F / Space Jump   R Restart\n%s" % [
-		run.health, run.hits, run.misses, time, duration, message]
+	hud.update_time(time)
 	queue_redraw()
 
 func _draw() -> void:
@@ -155,6 +203,7 @@ func _update_scene_art() -> void:
 			continue
 		var remaining := float(note.time) - time
 		var hit: bool = note.state == ChartRun.State.HIT
+		var holding: bool = note.state == ChartRun.State.HOLDING
 		var age := time - float(note.get("resolved_at", time))
 		if remaining > 0.9 or note.state == ChartRun.State.MISSED or (hit and age > 0.27):
 			if enemy_sprites.has(index):
@@ -169,8 +218,9 @@ func _update_scene_art() -> void:
 		if hit:
 			var impact_offset := 0.0 if note.has("duration") else offset + age * ENEMY_SPEED
 			offset = impact_offset + age * 620.0
-		elif note.state == ChartRun.State.HOLDING:
+		elif holding:
 			offset = 0.0
+			target.modulate.a = 1.0
 		elif absf(remaining) <= ChartRun.PERFECT_WINDOW:
 			target.modulate.a = 1.0
 		else:
@@ -182,9 +232,24 @@ func _update_scene_art() -> void:
 			$EnemyArt.add_child(sprite)
 			sprite.show()
 			enemy_sprites[index] = sprite
+			if note.has("duration"):
+				var tail := HoldTail.instantiate()
+				tail.name = "HoldTail"
+				tail.color = target.ring_color
+				sprite.add_child(tail)
 		var sprite: Sprite2D = enemy_sprites[index]
-		sprite.global_position = target.global_position + axis * offset + axis.orthogonal() * ENEMY_FLOAT * flight_wave
+		var lane_position := target.global_position + axis * offset
+		sprite.global_position = lane_position + axis.orthogonal() * ENEMY_FLOAT * flight_wave
 		sprite.rotation = enemy_art[lane].rotation + (age * 13.0 if hit else ENEMY_SWAY * flight_wave)
+		var tail := sprite.get_node_or_null("HoldTail")
+		if tail != null:
+			tail.visible = not hit
+			if not hit:
+				var tail_time := float(note.time) + float(note.duration)
+				var tail_end := target.global_position + axis * maxf(tail_time - time, 0.0) * ENEMY_SPEED
+				tail.global_transform = Transform2D(0.0, sprite.global_position)
+				tail.update_tail(tail_end - lane_position, holding)
+
 
 func _draw_solid_ground(from_x: float, to_x: float, left_edge: bool, right_edge: bool) -> void:
 	_draw_ground(from_x, to_x)

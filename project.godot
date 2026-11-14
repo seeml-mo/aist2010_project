@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="JSON Platformer Pipeline"
-run/main_scene="res://scenes/game.tscn"
+config/name="Beat Trail"
+run/main_scene="res://scenes/song_menu.tscn"
 config/features=PackedStringArray("4.7")
 
 [display]

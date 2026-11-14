@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/music_game.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/target.gd" id="4"]
 
 [ext_resource type="Texture2D" path="res://assets/shape/jump_arrow.svg" id="jump_arrow"]
 [ext_resource type="Texture2D" path="res://assets/shape/ground_edge.svg" id="ground_edge"]
@@ -12,44 +13,43 @@
 [ext_resource type="Texture2D" path="res://assets/shape/tile_background_tree_large.png" id="tree"]
 [ext_resource type="Texture2D" path="res://assets/shape/tile_cloud.png" id="cloud"]
 [ext_resource type="Texture2D" path="res://assets/shape/background_mountain.svg" id="mountain"]
-[ext_resource type="Texture2D" path="res://assets/shape/facial_part_mouth_angry.png" id="mouth"]
-[ext_resource type="Texture2D" path="res://assets/shape/facial_part_eye_open.png" id="eye"]
+[ext_resource type="Texture2D" path="res://assets/shape/face_g.png" id="face_g"]
 [ext_resource type="Texture2D" path="res://assets/shape/blue_body_circle.png" id="blue"]
 [ext_resource type="Texture2D" path="res://assets/shape/red_body_circle.png" id="red"]
 [node name="Game" type="Node2D"]
+process_mode = 3
 script = ExtResource("1")
 ground_surface = ExtResource("grass")
 ground_fill = ExtResource("soil")
 ground_edge = ExtResource("ground_edge")
 
 [node name="Music" type="AudioStreamPlayer" parent="."]
+process_mode = 1
 volume_db = -4.0
 
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(480, 270)
+zoom = Vector2(1.2, 1.2)
+
 [node name="Performer" parent="." instance=ExtResource("2")]
+process_mode = 1
 position = Vector2(340, 402)
 z_index = 1
+
+[node name="Feedback" type="Node2D" parent="."]
+process_mode = 1
 
 [node name="HUD" parent="." instance=ExtResource("3")]
 
 [node name="StraightTarget" type="Node2D" parent="Performer"]
 position = Vector2(53, -30)
-
-[node name="Ring" type="Line2D" parent="Performer/StraightTarget"]
-points = PackedVector2Array(20.900, 0.000, 20.721, 2.728, 20.188, 5.409, 19.309, 7.998, 18.100, 10.450, 16.581, 12.723, 14.779, 14.779, 12.723, 16.581, 10.450, 18.100, 7.998, 19.309, 5.409, 20.188, 2.728, 20.721, 0.000, 20.900, -2.728, 20.721, -5.409, 20.188, -7.998, 19.309, -10.450, 18.100, -12.723, 16.581, -14.779, 14.779, -16.581, 12.723, -18.100, 10.450, -19.309, 7.998, -20.188, 5.409, -20.721, 2.728, -20.900, 0.000, -20.721, -2.728, -20.188, -5.409, -19.309, -7.998, -18.100, -10.450, -16.581, -12.723, -14.779, -14.779, -12.723, -16.581, -10.450, -18.100, -7.998, -19.309, -5.409, -20.188, -2.728, -20.721, -0.000, -20.900, 2.728, -20.721, 5.409, -20.188, 7.998, -19.309, 10.450, -18.100, 12.723, -16.581, 14.779, -14.779, 16.581, -12.723, 18.100, -10.450, 19.309, -7.998, 20.188, -5.409, 20.721, -2.728)
-width = 2.5
-default_color = Color(0.875, 0.286, 0.243, 1)
-closed = true
-antialiased = true
+script = ExtResource("4")
+ring_color = Color(0.875, 0.286, 0.243, 1)
 
 [node name="UppercutTarget" type="Node2D" parent="Performer"]
 position = Vector2(6, -88)
-
-[node name="Ring" type="Line2D" parent="Performer/UppercutTarget"]
-points = PackedVector2Array(20.900, 0.000, 20.721, 2.728, 20.188, 5.409, 19.309, 7.998, 18.100, 10.450, 16.581, 12.723, 14.779, 14.779, 12.723, 16.581, 10.450, 18.100, 7.998, 19.309, 5.409, 20.188, 2.728, 20.721, 0.000, 20.900, -2.728, 20.721, -5.409, 20.188, -7.998, 19.309, -10.450, 18.100, -12.723, 16.581, -14.779, 14.779, -16.581, 12.723, -18.100, 10.450, -19.309, 7.998, -20.188, 5.409, -20.721, 2.728, -20.900, 0.000, -20.721, -2.728, -20.188, -5.409, -19.309, -7.998, -18.100, -10.450, -16.581, -12.723, -14.779, -14.779, -12.723, -16.581, -10.450, -18.100, -7.998, -19.309, -5.409, -20.188, -2.728, -20.721, -0.000, -20.900, 2.728, -20.721, 5.409, -20.188, 7.998, -19.309, 10.450, -18.100, 12.723, -16.581, 14.779, -14.779, 16.581, -12.723, 18.100, -10.450, 19.309, -7.998, 20.188, -5.409, 20.721, -2.728)
-width = 2.5
-default_color = Color(0.145, 0.42, 0.804, 1)
-closed = true
-antialiased = true
+script = ExtResource("4")
+ring_color = Color(0.145, 0.42, 0.804, 1)
 
 [node name="EnemyArt" type="Node2D" parent="."]
 z_index = 2
@@ -59,40 +59,16 @@ position = Vector2(570, 372)
 scale = Vector2(0.1625, 0.1625)
 texture = ExtResource("red")
 
-[node name="LeftEye" type="Sprite2D" parent="EnemyArt/Red"]
-position = Vector2(-30, -18)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("eye")
-
-[node name="RightEye" type="Sprite2D" parent="EnemyArt/Red"]
-position = Vector2(24, -18)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("eye")
-
-[node name="Mouth" type="Sprite2D" parent="EnemyArt/Red"]
-position = Vector2(0, 18)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("mouth")
+[node name="Face" type="Sprite2D" parent="EnemyArt/Red"]
+texture = ExtResource("face_g")
 
 [node name="Blue" type="Sprite2D" parent="EnemyArt"]
 position = Vector2(346, 195)
 scale = Vector2(0.1625, 0.1625)
 texture = ExtResource("blue")
 
-[node name="LeftEye" type="Sprite2D" parent="EnemyArt/Blue"]
-position = Vector2(-30, -18)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("eye")
-
-[node name="RightEye" type="Sprite2D" parent="EnemyArt/Blue"]
-position = Vector2(24, -18)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("eye")
-
-[node name="Mouth" type="Sprite2D" parent="EnemyArt/Blue"]
-position = Vector2(0, 18)
-scale = Vector2(0.61, 0.61)
-texture = ExtResource("mouth")
+[node name="Face" type="Sprite2D" parent="EnemyArt/Blue"]
+texture = ExtResource("face_g")
 
 [node name="FarScenery" type="Parallax2D" parent="."]
 z_index = -3
