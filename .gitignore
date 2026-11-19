@@ -20,3 +20,8 @@ Thumbs.db
 
 # Local temporary files
 *.tmp
+
+# Local test audio: never committed, never imported by Godot
+samples/*
+!samples/.gdignore
+!samples/README.md

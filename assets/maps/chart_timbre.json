@@ -1,0 +1,330 @@
+{
+  "version": 2,
+  "audio": {
+    "stream": "res://assets/voxel_30s.ogg",
+    "title": "Voxel Revolution (timbre)",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "duration": 30.0,
+    "offset": 0.0
+  },
+  "timing": {
+    "bpm": 123.047,
+    "beats": [
+      0.06966,
+      0.55728,
+      1.0449,
+      1.53252,
+      2.02014,
+      2.50776,
+      2.99537,
+      3.48299,
+      3.97061,
+      4.45823,
+      4.96907,
+      5.45669,
+      5.94431,
+      6.43193,
+      6.94277,
+      7.43039,
+      7.918,
+      8.40562,
+      8.89324,
+      9.38086,
+      9.86848,
+      10.37932,
+      10.86694,
+      11.35456,
+      11.84218,
+      12.3298,
+      12.84063,
+      13.32825,
+      13.81587,
+      14.30349,
+      14.79111,
+      15.30195,
+      15.78957,
+      16.27719,
+      16.76481,
+      17.25243,
+      17.74005,
+      18.25088,
+      18.7385,
+      19.22612,
+      19.71374,
+      20.20136,
+      20.68898,
+      21.19982,
+      21.68744,
+      22.17506,
+      22.66268,
+      23.15029,
+      23.63791,
+      24.12553,
+      24.63637,
+      25.12399,
+      25.61161,
+      26.09923,
+      26.61007,
+      27.09769,
+      27.58531,
+      28.07293,
+      28.56054,
+      29.04816,
+      29.53578
+    ],
+    "downbeats": [
+      1.53252,
+      3.48299,
+      5.45669,
+      7.43039,
+      9.38086,
+      11.35456,
+      13.32825,
+      15.30195,
+      17.25243,
+      19.22612,
+      21.19982,
+      23.15029,
+      25.12399,
+      27.09769,
+      29.04816
+    ]
+  },
+  "chart": {
+    "lanes": [
+      "attack",
+      "defend",
+      "jump"
+    ],
+    "notes": [
+      {
+        "time": 1.76472,
+        "lane": 0
+      },
+      {
+        "time": 2.50776,
+        "lane": 2
+      },
+      {
+        "time": 3.73841,
+        "lane": 0
+      },
+      {
+        "time": 4.20281,
+        "lane": 1
+      },
+      {
+        "time": 4.71365,
+        "lane": 0
+      },
+      {
+        "time": 5.43347,
+        "lane": 2
+      },
+      {
+        "time": 5.92109,
+        "lane": 1
+      },
+      {
+        "time": 6.68735,
+        "lane": 0
+      },
+      {
+        "time": 7.17497,
+        "lane": 2
+      },
+      {
+        "time": 7.66259,
+        "lane": 0
+      },
+      {
+        "time": 8.66104,
+        "lane": 0
+      },
+      {
+        "time": 9.38086,
+        "lane": 2
+      },
+      {
+        "time": 10.1239,
+        "lane": 0
+      },
+      {
+        "time": 10.72762,
+        "lane": 2
+      },
+      {
+        "time": 11.35456,
+        "lane": 1
+      },
+      {
+        "time": 12.07438,
+        "lane": 1
+      },
+      {
+        "time": 12.58522,
+        "lane": 0
+      },
+      {
+        "time": 13.30503,
+        "lane": 2
+      },
+      {
+        "time": 14.07129,
+        "lane": 0
+      },
+      {
+        "time": 15.04653,
+        "lane": 2
+      },
+      {
+        "time": 15.53415,
+        "lane": 0
+      },
+      {
+        "time": 15.99855,
+        "lane": 1
+      },
+      {
+        "time": 16.76481,
+        "lane": 2
+      },
+      {
+        "time": 17.48463,
+        "lane": 1
+      },
+      {
+        "time": 17.99546,
+        "lane": 0
+      },
+      {
+        "time": 18.9707,
+        "lane": 0
+      },
+      {
+        "time": 19.71374,
+        "lane": 1,
+        "duration": 0.418
+      },
+      {
+        "time": 20.57288,
+        "lane": 1
+      },
+      {
+        "time": 21.1766,
+        "lane": 1
+      },
+      {
+        "time": 21.91964,
+        "lane": 1,
+        "duration": 0.58
+      },
+      {
+        "time": 22.43048,
+        "lane": 0
+      },
+      {
+        "time": 23.15029,
+        "lane": 1,
+        "duration": 0.58
+      },
+      {
+        "time": 24.38095,
+        "lane": 0
+      },
+      {
+        "time": 25.12399,
+        "lane": 1,
+        "duration": 0.58
+      },
+      {
+        "time": 25.86703,
+        "lane": 0
+      },
+      {
+        "time": 26.61007,
+        "lane": 2
+      },
+      {
+        "time": 27.44599,
+        "lane": 1
+      },
+      {
+        "time": 28.07293,
+        "lane": 1,
+        "duration": 0.464
+      },
+      {
+        "time": 29.04816,
+        "lane": 1,
+        "duration": 0.464
+      }
+    ]
+  },
+  "analysis": {
+    "method": "MFCC + flatness/RMS/attack/flux descriptors, diagonal GMM soft grouping, per-group Gaussian smoothing, o_g=q_g*SF onset envelopes, adaptive per-group peak picking, minimum spacing, playability filter. Global beats from spectral-flux autocorrelation tempo plus DP tracking.",
+    "mode": "grouped",
+    "difficulty": "normal",
+    "seed": 0,
+    "parameters": {
+      "groups": 3,
+      "whitened_components": 8,
+      "smoothing_sigma_frames": 1.5,
+      "min_onset_spacing": 0.06,
+      "peak_delta": 0.03,
+      "samplerate": 22050,
+      "frame": 2048,
+      "hop": 512,
+      "bpm_range": [
+        80.0,
+        180.0
+      ]
+    },
+    "group_statistics": [
+      {
+        "group": 0,
+        "weight": 0.2355076403620429,
+        "low_ratio": 0.07840034020255113,
+        "mid_ratio": 0.4549539983711521,
+        "high_ratio": 0.466645661422465,
+        "flatness": 0.059394533960773654,
+        "attack": 0.03025792208023309,
+        "energy": -2.269869770190499,
+        "centroid": 3005.8542411792623,
+        "percussive": 0.8697674597381483
+      },
+      {
+        "group": 1,
+        "weight": 0.4207116359111314,
+        "low_ratio": 0.134159143347184,
+        "mid_ratio": 0.5357953623519371,
+        "high_ratio": 0.3300454942983454,
+        "flatness": 0.014091692443625318,
+        "attack": 0.03125963677474286,
+        "energy": -2.2072758145590434,
+        "centroid": 2225.762413708033,
+        "percussive": 0.7979823455586256
+      },
+      {
+        "group": 2,
+        "weight": 0.343780723729155,
+        "low_ratio": 0.15630015991973092,
+        "mid_ratio": 0.48187625823123287,
+        "high_ratio": 0.3618235818460354,
+        "flatness": 0.026679805501941704,
+        "attack": 0.14184515097052583,
+        "energy": -2.1823960697366536,
+        "centroid": 2308.2339656012587,
+        "percussive": 0.7895952934308677
+      }
+    ],
+    "lane_map": {
+      "0": 0,
+      "1": 1,
+      "2": 2
+    },
+    "candidates": 433,
+    "pooled_candidates": 180
+  }
+}
