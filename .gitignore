@@ -24,4 +24,3 @@ Thumbs.db
 # Local test audio: never committed, never imported by Godot
 samples/*
 !samples/.gdignore
-!samples/README.md
