@@ -12,6 +12,7 @@ signal menu_requested
 @onready var score: Label = %Score
 @onready var progress: ProgressBar = %Progress
 @onready var pause_button: Button = %Pause
+@onready var auto_badge: Label = %AutoBadge
 @onready var overlay: Control = %Overlay
 @onready var panel_title: Label = %PanelTitle
 @onready var panel_detail: Label = %PanelDetail
@@ -49,6 +50,9 @@ func update_counts(run: ChartRun) -> void:
 	for i in range(counters.size()):
 		counters[i].text = "%s  %02d" % [JUDGMENTS[i], values[i]]
 	score.text = "%07d" % run.score()
+
+func set_autoplay(enabled: bool) -> void:
+	auto_badge.visible = enabled
 
 func show_pause() -> void:
 	_show_panel("Paused", track_title)

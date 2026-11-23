@@ -9,11 +9,13 @@ const MAPS_DIR := "res://assets/maps"
 @onready var song_artist: Label = %SongArtist
 @onready var song_info: Label = %SongInfo
 @onready var start: Button = %Start
+@onready var auto_play: Button = %AutoPlay
 
 var charts: Array[Dictionary] = []
 
 func _ready() -> void:
-	start.pressed.connect(_play_selected)
+	start.pressed.connect(_play_selected.bind(false))
+	auto_play.pressed.connect(_play_selected.bind(true))
 	songs.item_selected.connect(_show_track)
 	songs.item_activated.connect(func(index: int): _open_chart(charts[index].path))
 	var paths := DirAccess.get_files_at(MAPS_DIR)
@@ -43,6 +45,7 @@ func _ready() -> void:
 		song_title.text = "No playable tracks"
 		song_artist.text = "Add a chart and its audio to load a track."
 		start.disabled = true
+		auto_play.disabled = true
 		return
 	var previous_path := str(get_tree().root.get_meta("selected_chart", ""))
 	var selected := 0
@@ -70,11 +73,12 @@ func _show_track(index: int) -> void:
 	details.append("%d NOTES" % chart.chart.notes.size())
 	song_info.text = "  ·  ".join(details)
 
-func _play_selected() -> void:
+func _play_selected(autoplay: bool) -> void:
 	var selected := songs.get_selected_items()
 	if not selected.is_empty():
-		_open_chart(charts[selected[0]].path)
+		_open_chart(charts[selected[0]].path, autoplay)
 
-func _open_chart(path: String) -> void:
+func _open_chart(path: String, autoplay: bool = false) -> void:
 	get_tree().root.set_meta("selected_chart", path)
+	get_tree().root.set_meta("autoplay_mode", autoplay)
 	get_tree().change_scene_to_file(GAME_SCENE)
