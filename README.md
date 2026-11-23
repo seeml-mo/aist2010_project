@@ -18,6 +18,7 @@ pipeline derives from the audio file.
 | `J` | straight punch (lane 0, attack) |
 | `K` | uppercut (lane 1, defend) |
 | `F` / `Space` | jump (lane 2) |
+| `A` | toggle auto play |
 | `R` | restart |
 | `Esc` | pause / resume |
 
@@ -37,6 +38,19 @@ melody, pads), `2` low percussive (kick, bass).
 Judgement (`scripts/chart_level.gd`): **Perfect** within ±55 ms, **Good** inside the
 lane window (attack/defend ±120 ms, jump ±90 ms), **Miss** on timeout. A hold needs 50 %
 of its length held for Good and 90 % for Perfect, so releasing early costs the note.
+
+## Auto play
+
+`Auto play` on the song menu starts the track in demo mode; inside a run, `A` toggles
+it on or off. The game presses, holds and releases every note itself (about 30 ms
+early, inside the Perfect window), so the chart plays itself for a perfect run and
+manual lane input is ignored while the mode is on. The HUD shows an `AUTO PLAY`
+badge whenever it is active. Restarting keeps the mode; launching the game scene
+directly accepts `--autoplay`:
+
+```powershell
+godot --path . scenes/game.tscn -- --chart=res://assets/maps/chart_band.json --autoplay
+```
 
 ## Repository layout
 
@@ -180,7 +194,9 @@ python scripts/generate_chart.py --audio assets/Lullaby.mp3 `
 ## 中文速览
 
 - 主场景 `scenes/song_menu.tscn`，选曲后进入 `scenes/game.tscn`；`F5` 运行。
-- 操作：`J` 直拳，`K` 上勾拳，`F`/`Space` 跳跃，`R` 重开，`Esc` 暂停。
+- 操作：`J` 直拳，`K` 上勾拳，`F`/`Space` 跳跃，`A` 自动游玩，`R` 重开，`Esc` 暂停。
+- 自动游玩：菜单里的 `Auto play` 进入演示模式，游戏中按 `A` 随时开关；HUD 显示
+  `AUTO PLAY`，模式会自动打出全部 Perfect 并忽略手动输入；也支持 `--autoplay` 参数。
 - 关卡由谱面生成：lane 2 生成地面缺口，lane 0/1 生成左右/上方飞来的目标，带
   `duration` 的 note 为长按。判定 Perfect ±55 ms，Good 直拳/上勾拳 ±120 ms、跳跃 ±90 ms。
 - 谱面由离线 Python 生成：`python scripts/generate_chart.py --audio assets/xxx.ogg

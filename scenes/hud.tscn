@@ -140,7 +140,7 @@ offset_bottom = 46.0
 mouse_filter = 2
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.72, 0.84, 0.8, 1)
-text = "J  Straight     K  Uppercut     F / Space  Jump"
+text = "J Straight   K Uppercut   F/Space Jump   A Auto"
 vertical_alignment = 1
 
 [node name="Overlay" type="ColorRect" parent="Interface"]
@@ -196,7 +196,7 @@ offset_bottom = 210.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.72, 0.84, 0.8, 1)
 theme_override_font_sizes/font_size = 16
-text = "Esc to resume   ·   R to restart"
+text = "Esc to resume   ·   R to restart   ·   A auto play"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -271,3 +271,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 17
 text = "Main menu"
+
+[node name="AutoBadge" type="Label" parent="Interface"]
+unique_name_in_owner = true
+offset_left = 22.0
+offset_top = 102.0
+offset_right = 232.0
+offset_bottom = 132.0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.88, 0.59, 1)
+text = "AUTO PLAY"
+visible = false

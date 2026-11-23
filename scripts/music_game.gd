@@ -13,6 +13,7 @@ const ENEMY_SWAY := deg_to_rad(9.0)
 const WALK_SWAY := deg_to_rad(4.0)
 const SPEED := 220.0
 const JUMP_DURATION := 0.46
+const AUTOPLAY_LEAD := 0.03
 
 @export var chart_path := "res://assets/maps/chart_band.json"
 @export var ground_surface: Texture2D
@@ -35,6 +36,7 @@ var run: ChartRun
 var time := 0.0
 var duration := 0.0
 var ended := false
+var autoplay := false
 var jump_started_at := -10.0
 var enemy_sprites: Dictionary = {}
 
@@ -43,6 +45,11 @@ func _ready() -> void:
 	hud.resume_requested.connect(_toggle_pause)
 	hud.restart_requested.connect(_restart)
 	hud.menu_requested.connect(_return_to_menu)
+	autoplay = bool(get_tree().root.get_meta("autoplay_mode", false))
+	for arg in OS.get_cmdline_user_args():
+		if arg == "--autoplay":
+			autoplay = true
+	hud.set_autoplay(autoplay)
 	for template in enemy_art:
 		template.hide()
 	$GroundPreview.hide()
@@ -73,7 +80,10 @@ func _ready() -> void:
 	music.play()
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and run != null and not ended:
+	if event.is_action_pressed("autoplay") and not event.is_echo() and run != null and not ended:
+		get_viewport().set_input_as_handled()
+		_set_autoplay(not autoplay)
+	elif event.is_action_pressed("ui_cancel") and run != null and not ended:
 		get_viewport().set_input_as_handled()
 		_toggle_pause()
 	elif event.is_action_pressed("restart") and run != null:
@@ -81,7 +91,7 @@ func _input(event: InputEvent) -> void:
 		_restart()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if run == null or ended or get_tree().paused or event.is_echo():
+	if run == null or ended or autoplay or get_tree().paused or event.is_echo():
 		return
 	for lane in range(ChartRun.ACTIONS.size()):
 		if lane < targets.size() and event.is_action_released(ChartRun.ACTIONS[lane]):
@@ -117,6 +127,13 @@ func _return_to_menu() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file(MENU_SCENE)
 
+func _set_autoplay(enabled: bool) -> void:
+	if autoplay == enabled:
+		return
+	autoplay = enabled
+	get_tree().root.set_meta("autoplay_mode", autoplay)
+	hud.set_autoplay(autoplay)
+
 func _on_judged(lane: int, judgement: int) -> void:
 	hud.update_counts(run)
 	if ended:
@@ -133,7 +150,37 @@ func _sample_clock() -> void:
 		time = maxf(time, clampf(clock, 0.0, duration))
 
 func _held_actions() -> Array[bool]:
+	if autoplay:
+		return _auto_held_actions()
 	return [Input.is_action_pressed("attack"), Input.is_action_pressed("defend"), Input.is_action_pressed("jump")]
+
+func _auto_held_actions() -> Array[bool]:
+	var held: Array[bool] = [false, false, false]
+	for note in run.notes:
+		if note.state == ChartRun.State.HOLDING:
+			held[int(note.lane)] = true
+	return held
+
+## Plays the chart itself: presses each pending note just before its time and
+## keeps held notes down until they resolve. Notes are time-sorted, so the first
+## eligible note per lane is also the earliest one.
+func _autoplay_step() -> void:
+	var pressed: Array[bool] = [false, false, false]
+	for note in run.notes:
+		var lane := int(note.lane)
+		if note.state == ChartRun.State.HOLDING:
+			performer.play_action(lane)
+			continue
+		if note.state != ChartRun.State.PENDING or pressed[lane]:
+			continue
+		var note_time := float(note.time)
+		if time < note_time - AUTOPLAY_LEAD or time > note_time + ChartRun.WINDOWS[lane]:
+			continue
+		pressed[lane] = true
+		performer.play_action(lane)
+		if lane == 2:
+			jump_started_at = time
+		run.press(lane, time)
 
 func _finish() -> void:
 	time = duration
@@ -149,6 +196,8 @@ func _process(_delta: float) -> void:
 	if run == null or ended or get_tree().paused:
 		return
 	_sample_clock()
+	if autoplay:
+		_autoplay_step()
 	run.advance(time, _held_actions())
 	var jump := clampf((time - jump_started_at) / JUMP_DURATION, 0.0, 1.0)
 	var lift := 48.0 * 4.0 * jump * (1.0 - jump)
